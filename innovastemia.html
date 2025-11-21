@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>INNOVA STEM: Dashboard de Análisis Juvenil</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+    <style>
+        /* La fuente Inter ya se usa por defecto y es moderna */
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 300px; 
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            padding: 1rem;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px; 
+                max-height: 400px;
+            }
+        }
+        
+        /* --- ESTILOS DEL MENÚ DE NAVEGACIÓN INFANTIL (NUEVO) --- */
+        
+        /* Estilo base para el enlace (apariencia de píldora) */
+        .nav-link {
+            /* Se usan clases en el HTML, aquí se define el hover y active para el dinamismo */
+            margin: 0 0.25rem; 
+            border: 2px solid transparent; 
+            /* Se asegura que la sombra base sea visible */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
+        }
+        
+        /* Efecto al pasar el ratón (Pop y cambio a amarillo suave) */
+        .nav-link:hover:not(.active) {
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 6px 10px -1px rgba(0, 0, 0, 0.15);
+        }
+        
+        /* Estilo activo: Amarillo brillante con borde azul y sombra amarilla */
+        .nav-link.active {
+            transform: translateY(0) scale(1.0);
+            background-color: #fcd34d; /* amber-400 */
+            color: #1e40af; /* blue-800 */
+            border-color: #1e40af; /* blue-800 */
+            box-shadow: 0 10px 15px -3px rgba(251, 191, 36, 0.6); /* Sombra amarilla más intensa */
+        }
+
+        /* --- Animación de Audiencia Juvenil --- */
+        .audience-container {
+            height: 2.5rem; /* Altura fija para la animación */
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+        }
+        .audience-words {
+            display: inline-block;
+            animation: slide-up 12s infinite cubic-bezier(0.86, 0.0, 0.07, 1.0); /* Curva de animación suave */
+        }
+        .audience-words span {
+            display: block;
+            opacity: 0;
+            line-height: 2.5rem; /* Asegura el espaciado correcto */
+        }
+
+        /* Definición de la animación de deslizamiento y opacidad */
+        @keyframes slide-up {
+            /* 1. Creadores de contenido */
+            0% { transform: translateY(0); opacity: 1; }
+            4% { opacity: 1; }
+            8% { opacity: 0; }
+            16% { transform: translateY(-25%); }
+
+            /* 2. Influencers */
+            24% { transform: translateY(-25%); opacity: 1; }
+            28% { opacity: 1; }
+            32% { opacity: 0; }
+            40% { transform: translateY(-50%); }
+
+            /* 3. E-commerce */
+            48% { transform: translateY(-50%); opacity: 1; }
+            52% { opacity: 1; }
+            56% { opacity: 0; }
+            64% { transform: translateY(-75%); }
+
+            /* 4. Usuarios de redes sociales */
+            72% { transform: translateY(-75%); opacity: 1; }
+            76% { opacity: 1; }
+            80% { opacity: 0; }
+            88% { transform: translateY(0); }
+
+            100% { transform: translateY(0); }
+        }
+        
+        /* Ajuste de animación para mostrar correctamente el primer elemento */
+        .audience-words span:nth-child(1) { animation: show-slide-up 12s infinite; }
+        .audience-words span:nth-child(2) { animation: show-slide-up 12s infinite; animation-delay: 3s; }
+        .audience-words span:nth-child(3) { animation: show-slide-up 12s infinite; animation-delay: 6s; }
+        .audience-words span:nth-child(4) { animation: show-slide-up 12s infinite; animation-delay: 9s; }
+        
+        @keyframes show-slide-up {
+            0%, 25% { opacity: 1; }
+            30%, 100% { opacity: 0; }
+        }
+
+        /* Custom loading spinner con color azul */
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #3b82f6; /* blue-500 */
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans text-gray-800">
+
+    
+<header class="bg-blue-50 shadow-xl sticky top-0 z-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-20 items-center"> 
+                <div class="flex items-center">
+                    <!-- LOGO ACTUALIZADO: INNOVA STEM en azul eléctrico y rojo -->
+                    <span class="text-3xl font-black text-blue-800 tracking-wider">INNOVA <span class="text-red-600">STEM</span></span>
+                    <span class="ml-4 text-sm text-gray-500 hidden sm:block italic">"El lenguaje del futuro, programado desde hoy."</span>
+                </div>
+                
+                <!-- Navegación -->
+                <div class="flex items-center space-x-2">
+                    <a href="#resumen-ejecutivo" class="nav-link px-4 py-2 rounded-full text-sm font-black transition duration-300 ease-in-out bg-blue-100 text-blue-700 active" data-section="resumen-ejecutivo">INICIO</a>
+                    <a href="#quienes-somos" class="nav-link px-4 py-2 rounded-full text-sm font-black transition duration-300 ease-in-out bg-blue-100 text-blue-700" data-section="quienes-somos">QUIENES SOMOS</a>
+                    <a href="#swap-app" class="nav-link px-4 py-2 rounded-full text-sm font-black transition duration-300 ease-in-out bg-blue-100 text-blue-700" data-section="swap-app">App Demo</a>
+                    <a href="#tecnologia" class="nav-link px-4 py-2 rounded-full text-sm font-black transition duration-300 ease-in-out bg-blue-100 text-blue-700" data-section="tecnologia">Tecnología</a>
+                    <a href="#cursos-sidebar" class="nav-link px-4 py-2 rounded-full text-sm font-black transition duration-300 ease-in-out bg-blue-100 text-blue-700" data-section="cursos-sidebar">CURSOS</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Contenido principal y barra lateral -->
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            
+            <!-- Columna principal -->
+            <main class="lg:col-span-3">
+                
+                <!-- Resumen Ejecutivo -->
+                <section id="resumen-ejecutivo" class="mb-8 p-6 bg-white rounded-2xl shadow-2xl">
+                    <h1 class="text-4xl font-extrabold text-blue-800 mb-2">INNOVA STEM: Dashboard de Análisis</h1>
+                    <p class="text-xl text-gray-600 mb-4 font-light italic">
+                        "El futuro se programa hoy: Inspira, Crea y Transforma."
+                    </p>
+                    
+                    <!-- Audiencia y Estadísticas -->
+                    <h2 class="text-3xl font-extrabold text-blue-800 mt-8 mb-4">Impulsando a:</h2>
+                    <div class="flex flex-col md:flex-row items-center justify-center bg-amber-50 p-3 rounded-xl mb-6 shadow-inner">
+                        <span class="text-lg text-blue-700 mr-4 whitespace-nowrap">Audiencia Principal:</span>
+                        <div class="audience-container">
+                            <div class="audience-words text-xl text-amber-700">
+                                <span>Creadores de contenido</span>
+                                <span>Influencers</span>
+                                <span>E-commerce (modelaje virtual)</span>
+                                <span>Usuarios de redes sociales</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
+                        <div class="p-4 bg-blue-50 rounded-xl shadow-md">
+                            <div class="text-3xl font-black text-blue-600">8.5/10</div>
+                            <p class="text-sm text-gray-500">CSAT (Satisfacción)</p>
+                        </div>
+                        <div class="p-4 bg-blue-50 rounded-xl shadow-md">
+                            <div class="text-3xl font-black text-blue-600">7.9</div>
+                            <p class="text-sm text-gray-500">Puntuación de Realismo</p>
+                        </div>
+                        <div class="p-4 bg-blue-50 rounded-xl shadow-md">
+                            <div class="text-3xl font-black text-blue-600">4.58x</div>
+                            <p class="text-sm text-gray-500">Ratio LTV/CAC (Simulado)</p>
+                        </div>
+                        <div class="p-4 bg-red-50 rounded-xl shadow-md">
+                            <div class="text-3xl font-black text-red-600">3%</div>
+                            <p class="text-sm text-gray-500">Riesgo Deepfake</p>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- Quiénes Somos -->
+                <section id="quienes-somos" class="mb-8 p-6 bg-white rounded-2xl shadow-2xl border-t-8 border-blue-600">
+                    <h2 class="text-3xl font-extrabold text-blue-800 mb-4">1. ¿Quiénes Somos? El Poder de la Programación Infantil</h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="p-5 bg-blue-50 rounded-xl shadow-lg border-l-4 border-blue-700">
+                            <h3 class="text-xl font-black text-blue-600 mb-2">El Futuro en sus Manos <span class="text-sm font-normal text-gray-500 italic">(Nuestra Misión)</span></h3>
+                            <p class="text-gray-700">
+                                Nuestra misión esencial es forjar el camino de las nuevas generaciones mediante una educación que mira hacia adelante. Estamos dedicados a equipar a cada niño no solo con conocimientos fundamentales, sino también con las habilidades digitales y el pensamiento crítico necesarios para navegar y prosperar en el emocionante y cambiante ecosistema del mañana. Queremos que sean los creadores y líderes de ese futuro digital fascinante, no meros espectadores.
+                            </p>
+                        </div>
+                        
+                        <div class="p-5 bg-amber-50 rounded-xl shadow-lg border-l-4 border-amber-500">
+                            <h3 class="text-xl font-black text-amber-700 mb-2">Nuestra Visión: Transformando Consumidores en Creadores</h3>
+                            <p class="text-gray-700">
+                                Vemos la programación no solo como una materia, sino como el lenguaje esencial del siglo XXI, una forma moderna de alfabetización crucial para el desarrollo de cualquier joven. Nuestro objetivo es llevar a los niños más allá del simple consumo de tecnología. A través de nuestras clases, les proporcionamos las herramientas para que se conviertan en innovadores activos, dándoles el poder de expresar sus ideas, resolver problemas y dar forma al mundo que les rodea, usando el código como su medio de creación.
+                            </p>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- Demo Interactivo -->
+                <section id="swap-app" class="mb-8 p-6 bg-white rounded-2xl shadow-2xl border-t-8 border-red-500">
+                    <h2 class="text-3xl font-extrabold text-red-700 mb-4">2. Demo Interactivo: Intercambio de Vestimenta</h2>
+                    <p class="text-gray-600 mb-6">
+                        Sube una imagen y selecciona la prenda para simular el proceso de intercambio de vestimenta mediante IA.
+                    </p>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Panel de control -->
+                        <div class="md:col-span-1 p-4 bg-gray-50 rounded-xl shadow-inner flex flex-col space-y-4">
+                            <h3 class="text-xl font-bold text-blue-600">1. Sube tu Foto</h3>
+                            <input type="file" id="imageUpload" accept="image/*" class="w-full text-sm text-gray-500
+                                file:mr-4 file:py-2 file:px-4
+                                file:rounded-full file:border-0
+                                file:text-sm file:font-bold
+                                file:bg-amber-100 file:text-amber-700
+                                hover:file:bg-amber-200" onchange="handleFileUpload(event)">
+                                
+                            <!-- Previsualización de la imagen subida -->
+                            <div class="mt-4 border-4 border-dashed border-blue-300 rounded-xl p-2 h-64 flex justify-center items-center overflow-hidden bg-white">
+                                <img id="uploadedImagePreview" src="https://placehold.co/200x200/bfdbfe/2563eb?text=Foto+Original" alt="Foto Original" class="max-h-full max-w-full object-contain rounded-lg">
+                            </div>
+                            
+                            <h3 class="text-xl font-bold text-blue-600 mt-4">2. Opciones de Generación</h3>
+                            <select id="clothingSelector" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                                <option value="a luxury red silk dress">Vestido de seda rojo de lujo</option>
+                                <option value="Traje profesional azul oscuro">Traje profesional azul oscuro</option>
+                                <option value="a black leather motorcycle jacket and jeans">Chaqueta de cuero negra y jeans</option>
+                                <option value="a simple white t-shirt and light blue shorts">Camiseta blanca y shorts azules claros</option>
+                            </select>
+
+                            <!-- Botón de Generación Swap -->
+                            <button id="generateButton" onclick="generateSwap('swap')" class="mt-4 px-4 py-2 bg-red-600 text-white font-black rounded-lg hover:bg-red-700 transition duration-150 shadow-lg flex items-center justify-center">
+                                <span id="buttonTextSwap">Generar Intercambio Digital</span>
+                                <div id="loadingSpinnerSwap" class="spinner ml-3 hidden"></div>
+                            </button>
+                            
+                            <!-- Botón de Mejora (Enhance) -->
+                            <button id="enhanceButton" onclick="generateSwap('enhance')" class="mt-2 px-4 py-2 bg-blue-600 text-white font-black rounded-lg hover:bg-blue-700 transition duration-150 shadow-lg flex items-center justify-center">
+                                <span id="buttonTextEnhance">🎁 Regalo: Aumentar Calidad HD</span>
+                                <div id="loadingSpinnerEnhance" class="spinner ml-3 hidden"></div>
+                            </button>
+                            
+                            <!-- Área de Mensajes -->
+                            <p id="messageArea" class="text-sm mt-2 text-center text-gray-600"></p>
+                        </div>
+                        
+                        <!-- Resultado Generado por IA -->
+                        <div class="md:col-span-2 p-4 bg-blue-50 rounded-2xl shadow-xl flex flex-col">
+                            <h3 class="text-xl font-bold text-blue-600 mb-2">3. Resultado Generado (Solo Visor)</h3>
+                            <div class="flex-grow border-4 border-red-400 rounded-xl p-2 flex justify-center items-center overflow-hidden bg-white">
+                                <!-- La propiedad oncontextmenu="return false;" bloquea el clic derecho -->
+                                <img id="resultImage" oncontextmenu="return false;" src="https://placehold.co/400x300/60a5fa/1e3a8a?text=Resultado+IA" alt="Resultado de Intercambio" class="max-h-full max-w-full object-contain rounded-lg select-none">
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Tecnología y Análisis -->
+                <section id="tecnologia" class="mb-8 p-6 bg-white rounded-2xl shadow-2xl border-t-8 border-blue-500">
+                    <h2 class="text-3xl font-extrabold text-blue-700 mb-4">3. Tecnología Central y Realismo</h2>
+                    <p class="text-gray-600 mb-6">
+                        Analiza el rendimiento del modelo híbrido. El realismo es alto, pero enfrenta desafíos con la geometría corporal.
+                    </p>
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        
+                        <!-- Métrica de Latencia -->
+                        <div class="lg:col-span-1 p-4 bg-gray-50 rounded-xl shadow-inner flex flex-col justify-center items-center">
+                            <span class="text-3xl font-bold text-blue-600">Latencia Promedio:</span>
+                            <div class="text-6xl font-black text-blue-800 mt-2" id="latencyStat">12.5s</div>
+                            <p class="text-sm text-gray-500">Tiempo de Generación por Swap</p>
+                            <p class="text-xs text-red-500 mt-2">Identificado como factor primario de abandono.</p>
+                        </div>
+
+                        <!-- Gráfico de Realismo -->
+                        <div class="lg:col-span-2 p-4 bg-gray-50 rounded-xl shadow-inner">
+                            <h3 class="text-xl font-bold mb-2 text-blue-600">Realismo según Prenda (Escala 1-10)</h3>
+                            <div class="chart-container h-80 max-h-96">
+                                <canvas id="realismChart"></canvas>
+                            </div>
+                        </div>
+                        
+                        <!-- Desafío -->
+                        <div class="lg:col-span-3 p-4 bg-white border-l-4 border-blue-500 shadow-lg">
+                            <h3 class="font-bold text-lg text-blue-700">Desafío: Geometría Corporal</h3>
+                            <p class="text-gray-600">El modelo lucha con el **"Body Geometry Discrepancy"** en poses no estándar. La Fidelidad de la Textura cae en patrones complejos.</p>
+                        </div>
+                    </div>
+                </section>
+
+            </main>
+
+            <!-- Barra Lateral (Sidebar) - Cursos -->
+            <aside class="lg:col-span-1">
+                <div id="cursos-sidebar" class="sticky top-24 p-6 bg-amber-100 rounded-2xl shadow-xl border-t-8 border-red-400">
+                    
+                    <!-- Título de Cursos -->
+                    <h2 class="text-2xl font-black text-red-700 mb-4 border-b-2 border-red-300 pb-2">CURSOS INNOVA:</h2>
+                    <p class="text-sm text-gray-600 mb-4">
+                        Desarrolla el futuro de tus hijos con nuestros cursos de programación y diseño creativo.
+                    </p>
+
+                    <!-- Curso 1 -->
+                    <div class="bg-white p-4 rounded-xl shadow-md mb-4 border-l-4 border-blue-500">
+                        <h3 class="font-extrabold text-blue-700 text-lg">SCRATCH PARA NIÑOS</h3>
+                        <p class="text-sm text-gray-600 mt-1">
+                            Aprende a programar juegos y animaciones.
+                        </p>
+                        <span class="text-xs font-semibold text-red-600 mt-1 block">Edades: 7 - 12 años</span>
+                    </div>
+
+                    <!-- Curso 2 -->
+                    <div class="bg-white p-4 rounded-xl shadow-md mb-6 border-l-4 border-blue-500">
+                        <h3 class="font-extrabold text-blue-700 text-lg">TINKERCAD 3D</h3>
+                        <p class="text-sm text-gray-600 mt-1">
+                            Diseña objetos 3D e inicia en la electrónica.
+                        </p>
+                        <span class="text-xs font-semibold text-red-600 mt-1 block">Edades: 7 - 12 años</span>
+                    </div>
+
+                    <!-- Botón de Registro -->
+                    <h3 class="font-bold text-center text-red-700 mb-3">REGISTRO PARA INFORMACIÓN</h3>
+                    <a href="https://wa.me/5804129468813" target="_blank" 
+                       class="w-full flex items-center justify-center px-4 py-3 bg-green-500 text-white font-black rounded-lg hover:bg-green-600 transition duration-150 shadow-xl">
+                       <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12.031 3c-4.935 0-8.943 4.008-8.943 8.943 0 1.58.418 3.12 1.205 4.468l-1.282 4.693 4.81-1.258c1.319.728 2.808 1.107 4.21 1.107h.005c4.935 0 8.944-4.008 8.944-8.943s-4.009-8.943-8.944-8.943zm3.766 12.871c-.087-.142-.284-.23-.482-.321-.198-.09-.99-.486-1.144-.543-.153-.058-.266-.087-.379.087-.113.175-.436.543-.532.656-.098.125-.193.125-.366.046-.17-.078-.724-.266-1.378-.85-.503-.436-.843-.99-.941-1.15-.098-.158-.008-.243.069-.301.065-.058.153-.146.228-.219.074-.073.098-.125.145-.213.047-.09.023-.158-.012-.22-.036-.062-.338-.813-.464-1.114-.125-.301-.252-.257-.348-.257-.095 0-.208-.012-.321-.012-.113 0-.299.046-.452.208-.153.163-.585.57-.585 1.393 0 .823.598 1.611.685 1.724.088.113 1.173 1.79 2.85 2.558 1.676.77 1.676.516 2.082.483.407-.034 1.168-.475 1.336-.921.168-.445.168-.823.116-.921-.052-.098-.184-.153-.342-.23z"/>
+                        </svg>
+                       WhatsApp (+58 412 9468813)
+                    </a>
+                </div>
+            </aside>
+        </div>
+
+    </div>
+
+    <script>
+        // --- Variables de Estado para la Aplicación de Intercambio ---
+        let uploadedImageBase64 = null;
+        let uploadedImageMimeType = 'image/png'; // Default MIME type
+        const apiKey = ""; 
+        // Usamos gemini-2.5-flash-image-preview para la generación de imagen a partir de una imagen
+        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent?key=${apiKey}`;
+        
+        // --- Utilidades para la API ---
+        
+        /**
+         * Convierte un objeto File a una cadena Base64.
+         * @param {File} file El archivo de imagen a convertir.
+         */
+        const toBase64 = file => new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result.split(',')[1]); // Extrae solo la parte de los datos
+            reader.onerror = error => reject(error);
+        });
+
+        /**
+         * Realiza una llamada a la API con retroceso exponencial para manejar errores de throttling.
+         */
+        async function exponentialBackoffFetch(url, options, maxRetries = 5, delay = 1000) {
+            for (let i = 0; i < maxRetries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    
+                    if (!response.ok) {
+                        const errorBody = await response.text();
+                        console.error('API Error Response:', errorBody);
+                        
+                        // Si es 429 (Too Many Requests) y quedan reintentos, espera.
+                        if (response.status === 429 && i < maxRetries - 1) {
+                            await new Promise(resolve => setTimeout(resolve, delay));
+                            delay *= 2; 
+                            continue;
+                        }
+
+                        // Para cualquier otro error HTTP
+                        let errorMessage = `Error HTTP ${response.status}: ${response.statusText}.`;
+                        if (errorBody && errorBody.length > 0) {
+                            try {
+                                const jsonError = JSON.parse(errorBody);
+                                errorMessage = jsonError.error?.message || errorMessage;
+                            } catch (e) {
+                                errorMessage = `Error en la respuesta del servidor: ${errorBody.substring(0, 150)}...`;
+                            }
+                        }
+                        throw new Error(errorMessage);
+                    }
+                    return response;
+                } catch (error) {
+                    if (i === maxRetries - 1) throw error;
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    delay *= 2;
+                }
+            }
+        }
+
+        /**
+         * Agrega la marca de agua "INNOVA STEM" con estilo diagonal y central.
+         * @param {string} base64Image La imagen en formato Base64 (sin el prefijo data:image/...).
+         * @returns {Promise<string>} La imagen con marca de agua en formato Base64 con prefijo.
+         */
+        function addWatermark(base64Image) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    const ctx = canvas.getContext('2d');
+                    
+                    ctx.drawImage(img, 0, 0); // Dibuja la imagen original
+                    
+                    // Configuración de la marca de agua "INNOVA STEM" (más grande y cubriendo el centro)
+                    const fontSize = Math.max(30, Math.floor(canvas.height / 10)); // Tamaño de fuente dinámico
+                    ctx.font = `900 ${fontSize}px Inter, sans-serif`; // Fuente muy gruesa
+                    ctx.fillStyle = "rgba(30, 64, 175, 0.4)"; // Azul eléctrico semi-transparente
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    
+                    const x = canvas.width / 2;
+                    const y = canvas.height / 2;
+                    
+                    // Rotar para efecto diagonal
+                    ctx.save();
+                    ctx.translate(x, y);
+                    ctx.rotate(-20 * Math.PI / 180); // Rotación de -20 grados
+                    ctx.fillText("INNOVA STEM", 0, 0); 
+                    ctx.restore();
+
+                    // Devuelve Base64 sin prefijo
+                    // Se usa image/png ya que es más seguro para el canal alfa (transparencia)
+                    resolve(canvas.toDataURL('image/png').split(',')[1]); 
+                };
+                img.src = `data:image/${uploadedImageMimeType};base64,${base64Image}`; 
+            });
+        }
+        
+        // --- Funcionalidad del Intercambio Digital y Mejora ---
+
+        /**
+         * Muestra/Oculta el spinner de carga y deshabilita los botones.
+         * @param {string} mode 'swap' o 'enhance'
+         * @param {boolean} isLoading true para mostrar, false para ocultar.
+         */
+        function setLoading(mode, isLoading) {
+            const spinner = document.getElementById(`loadingSpinner${mode === 'swap' ? 'Swap' : 'Enhance'}`);
+            const buttonText = document.getElementById(`buttonText${mode === 'swap' ? 'Swap' : 'Enhance'}`);
+            
+            if (isLoading) {
+                spinner.classList.remove('hidden');
+                buttonText.textContent = 'Generando...';
+                document.getElementById('generateButton').disabled = true;
+                document.getElementById('enhanceButton').disabled = true;
+            } else {
+                spinner.classList.add('hidden');
+                buttonText.textContent = mode === 'swap' ? 'Generar Intercambio Digital' : '🎁 Regalo: Aumentar Calidad HD';
+                document.getElementById('generateButton').disabled = false;
+                document.getElementById('enhanceButton').disabled = false;
+            }
+        }
+
+
+        /**
+         * Maneja la subida del archivo, muestra la previsualización y convierte a Base64.
+         * @param {Event} event El evento de cambio del input file.
+         */
+        async function handleFileUpload(event) {
+            const file = event.target.files[0];
+            const preview = document.getElementById('uploadedImagePreview');
+            const messageArea = document.getElementById('messageArea');
+            
+            if (file) {
+                if (!file.type.startsWith('image/')) {
+                    messageArea.textContent = 'Error: Por favor, sube solo archivos de imagen.';
+                    preview.src = "https://placehold.co/200x200/bfdbfe/2563eb?text=Error";
+                    uploadedImageBase64 = null;
+                    uploadedImageMimeType = 'image/png';
+                    return;
+                }
+                
+                try {
+                    // Almacena el MIME type del archivo original
+                    uploadedImageMimeType = file.type;
+                    
+                    // Mostrar previsualización
+                    preview.src = URL.createObjectURL(file);
+                    
+                    // Convertir a Base64 para la API
+                    uploadedImageBase64 = await toBase64(file);
+                    messageArea.textContent = '¡Foto lista para el intercambio! Presiona un botón para generar.';
+                } catch (e) {
+                    messageArea.textContent = 'Error al procesar la imagen.';
+                    uploadedImageBase64 = null;
+                }
+            }
+        }
+
+        /**
+         * Ejecuta la llamada a la API para generar la imagen con el cambio de ropa o mejora.
+         * @param {string} mode 'swap' para cambio de ropa o 'enhance' para mejora de foto.
+         */
+        async function generateSwap(mode) {
+            const resultImage = document.getElementById('resultImage');
+            const messageArea = document.getElementById('messageArea');
+            const clothingSelector = document.getElementById('clothingSelector');
+            
+            if (!uploadedImageBase64) {
+                messageArea.textContent = '⚠️ ¡Ojo! Sube una foto para empezar (Paso 1).';
+                return;
+            }
+
+            setLoading(mode, true);
+            messageArea.textContent = `Enviando solicitud para ${mode === 'swap' ? 'Intercambio' : 'Mejora'}...`;
+            
+            let userPrompt;
+            if (mode === 'swap') {
+                const clothing = clothingSelector.value;
+                // Prompt mejorado para forzar la conservación de elementos y enfocar en la vestimenta.
+                userPrompt = `Please generate the image-to-image output. The subject in the original photo is now wearing: ${clothing}. Maintain the person's face, pose, lighting, and background perfectly. Focus the change ONLY on the clothing item.`;
+            } else { // mode === 'enhance'
+                // Prompt para mejora de calidad y upscaling.
+                userPrompt = "Please generate the image-to-image output. Enhance quality to HD, sharpness, and overall visual appeal, making it a high-definition photograph. Maintain the pose, clothes, face, and background exactly as they are. The goal is only visual and technical quality improvement (upscale and enhance).";
+            }
+
+            const payload = {
+                contents: [{
+                    parts: [
+                        { text: userPrompt },
+                        {
+                            inlineData: {
+                                mimeType: uploadedImageMimeType,
+                                data: uploadedImageBase64
+                            }
+                        }
+                    ]
+                }],
+                // Usamos la modalidad IMAGE para recibir la imagen generada
+                generationConfig: {
+                    responseModalities: ['IMAGE']
+                },
+            };
+
+            const options = {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            };
+
+            try {
+                const response = await exponentialBackoffFetch(API_URL, options);
+                const result = await response.json();
+                
+                const base64Data = result?.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
+
+                if (!base64Data) {
+                    messageArea.textContent = '❌ Error de generación: No se pudo obtener la imagen. Intenta con otra foto o prompt.';
+                    return;
+                }
+                
+                // Aplicar la marca de agua "INNOVA STEM" (más grande y central)
+                const watermarkedBase64 = await addWatermark(base64Data);
+
+                const imageUrl = `data:image/png;base64,${watermarkedBase64}`;
+                resultImage.src = imageUrl;
+                messageArea.textContent = '✅ ¡Generación exitosa! Tu imagen de IA está lista.';
+
+            } catch (error) {
+                console.error("Error en la llamada a la API:", error);
+                messageArea.textContent = `❌ Error: ${error.message || 'Error desconocido al generar la imagen.'}`;
+                
+            } finally {
+                setLoading(mode, false);
+            }
+        }
+        
+        // --- Inicialización y Gráficos ---
+
+        // Función para inicializar el gráfico de barras
+        function initializeChart() {
+            const ctx = document.getElementById('realismChart').getContext('2d');
+            
+            const data = {
+                labels: ['Vestidos', 'Chaquetas', 'Trajes', 'Ropa casual'],
+                datasets: [{
+                    label: 'Puntuación de Realismo (1-10)',
+                    data: [8.5, 7.8, 9.1, 7.3],
+                    backgroundColor: [
+                        'rgba(30, 64, 175, 0.8)', // blue-800
+                        'rgba(220, 38, 38, 0.8)', // red-600
+                        'rgba(30, 64, 175, 0.8)',
+                        'rgba(220, 38, 38, 0.8)'
+                    ],
+                    borderColor: 'rgba(30, 64, 175, 1)', // blue-800
+                    borderWidth: 1,
+                    borderRadius: 5,
+                }]
+            };
+
+            const config = {
+                type: 'bar',
+                data: data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false,
+                        },
+                        title: {
+                            display: false,
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 10,
+                            title: {
+                                display: true,
+                                text: 'Realismo (1-10)',
+                                color: '#1e40af' // blue-800
+                            }
+                        }
+                    }
+                }
+            };
+
+            new Chart(ctx, config);
+        }
+
+        // Inicializar el gráfico después de que el DOM esté cargado
+        document.addEventListener('DOMContentLoaded', initializeChart);
+        
+        // Manejar el cambio de navegación y la clase 'active'
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                // Remove 'active' from all links
+                document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                // Add 'active' to the clicked link
+                this.classList.add('active');
+            });
+        });
+    </script>
+</body>
+</html>
